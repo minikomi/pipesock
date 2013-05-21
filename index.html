@@ -25,12 +25,12 @@
             }
 
           var jsondata = JSON.parse(evt.data);
-          var message = "<tr><td>"+jsondata.Time+"</td><td>"+jsondata.Message+"</td></tr>"
+          var message = "<tr><td>"+new Date(jsondata.Time)+"</td><td>"+jsondata.Message+"</td></tr>"
           writeToScreen(message);
         };
 
-        function onError(evt) { writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data); }
-        function onClose(evt) { writeToScreen('<span style="color: red;">Close:</span> ' + evt.data); }
+        function onError(evt) { writeToScreen('<tr><td>'+new Date()+'</td><td><span style="color: red;">ERROR</span> ' + evt.reason +'</td></tr>'); }
+        function onClose(evt) { console.log(evt); writeToScreen('<tr><td>'+new Date()+'</td><td><span style="color: red;">Close </span> ' + evt.reason +'</td></tr>'); }
 
 
         testWebSocket();
