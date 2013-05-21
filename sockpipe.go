@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"time"
 	"code.google.com/p/go.net/websocket"
 	"encoding/json"
 	"log"
@@ -21,6 +22,11 @@ func IndexServer(w http.ResponseWriter, req *http.Request) {
 type Hub struct {
 	Connections map[*Socket]bool
 	Pipe        chan []byte
+}
+
+type Message struct {
+	Time    time.Time
+	Message string
 }
 
 func (h *Hub) Broadcast() {
@@ -84,7 +90,7 @@ func main() {
 			}
 
 			//Marshal
-			msg, err := json.Marshal(map[string]string{"message": str})
+			msg, err := json.Marshal(&Message{time.Now(), str})
 			if err != nil {
 				log.Println("JSON Error:", err)
 				continue
