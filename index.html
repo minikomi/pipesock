@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pipesock</title>
+    <script src="zepto.min.js" type="text/javascript"></script>
+    <script language="javascript" type="text/javascript">
+
+      $(document).ready(function(){
+        var wsUri = "ws://poyo.co:12345/ws";
+        var output = $("#output");
+        var inputform = $("#inputform");
+
+        function testWebSocket() {
+          websocket = new WebSocket(wsUri);
+          websocket.onclose = function(evt) { onClose(evt) };
+          websocket.onmessage = function(evt) { onMessage(evt) };
+          websocket.onerror = function(evt) { onError(evt) };
+        };
+
+
+        function onMessage(evt) {
+          if (evt.data == "Welcome") {
+            return
+            }
+
+          var jsondata = JSON.parse(evt.data);
+          var message = "<tr><td>"+jsondata.message+"</td></tr>"
+          writeToScreen(message);
+        };
+
+        function onError(evt) { writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data); }
+        function onClose(evt) { writeToScreen('<span style="color: red;">Close:</span> ' + evt.data); }
+
+
+        testWebSocket();
+      });
+
+      function writeToScreen(message) {
+        $("#output").append(message);
+      }
+
+    </script>
+    <style>
+      .priorityV{background-color:#f3f3f3 }
+      .priorityD{background-color:#DFFAFF }
+      .priorityE{background-color:#FFE7E7 }
+      .priorityI{background-color:#E0FFEB }
+      .priorityW{background-color:#FFFEDD }
+      table
+      {
+        font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;
+        font-size: 12px;
+        margin: 45px;
+        width:960px;
+        text-align: left;
+        border-collapse: collapse;
+        border: 1px solid #69c;
+      }
+      table th
+      {
+        padding: 12px 17px 12px 17px;
+        font-weight: normal;
+        font-size: 14px;
+        color: #039;
+        border-bottom: 1px dashed #69c;
+        text-align: center;
+      }
+      table td
+      {
+        padding: 7px 17px 7px 17px;
+        color: #111;
+        border-top: 1px solid #dedede;
+      }
+      table tr:hover td
+      {
+        color: #339;
+        background: #d0dafd;
+      }
+
+      </style>
+  </head>
+  <body>
+    <h1>pipesock</h1>
+    <table id="output">
+    <th>Timestamp</th> <th>Priority</th><th>Tag</th><th>Message</th>
+    </table>
+  </body>
+</html>
