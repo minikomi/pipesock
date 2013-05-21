@@ -1,13 +1,12 @@
-# adb logcat -> json -> websocket server
+# Pipesock
 
-In order to facilitate making tools to work with adb output a little easier,
-a small server which parses adb logcat output and then passes it to a websocket.
+A websocket server you can pipe to.
 
-Still lots to do, but it's working.
+!(pipesockn')[http://www.westernsafety.com/ultratech2008/UltratechStormpg18-PipeSock.jpg]
 
-Current status...
+Todo: 
 
-1. go get code.google.com/p/go.net/websocket
-2. connect android phone
-3. go run adbwebsocket.go
-4. open localhost:12345 in websocket-friendly browser & watch json output
+* Batch using time.After
+* d3 frontend
+* read templates from ./pipesock
+* flag for pass through
