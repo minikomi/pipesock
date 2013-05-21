@@ -7,6 +7,7 @@ A websocket server you can pipe to.
 Todo: 
 
 * Batch using time.After
+* flag for batch rate
 * d3 frontend
 * read templates from ./pipesock
 * flag for pass through
