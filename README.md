@@ -2,7 +2,7 @@
 
 A websocket server you can pipe to.
 
-!(pipesockn')[http://www.westernsafety.com/ultratech2008/UltratechStormpg18-PipeSock.jpg]
+![pipesockn'](http://www.westernsafety.com/ultratech2008/UltratechStormpg18-PipeSock.jpg)
 
 Todo: 
 
