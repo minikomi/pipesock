@@ -44,28 +44,24 @@
     </table>
     <script language="javascript" type="text/javascript">
 
-        var wsUri = "ws://"+document.location.host+"/ws";
+      var wsUri = "ws://"+document.location.host+"/ws";
+      var buffer;
+      websocket = new WebSocket(wsUri);
+      d3.json("/buffer.json", function(data){
+        buffer = JSON.parse(data);
+        plot()
 
-        function testWebSocket() {
-          websocket = new WebSocket(wsUri);
-          websocket.onclose = function(evt) { onClose(evt) };
-          websocket.onmessage = function(evt) { onMessage(evt) };
-          websocket.onerror = function(evt) { onError(evt) };
+        websocket.onmessage = function(evt){
+          buffer = buffer.concat(JSON.parse(evt.data));
+          plot();
         };
 
+      });
 
-        function onMessage(evt) {
-          plot(JSON.parse(evt.data));
-        };
-
-        function onError(evt) { writeToScreen('<tr><td>'+new Date()+'</td><td><span style="color: red;">ERROR</span> ' + evt.reason +'</td></tr>'); }
-        function onClose(evt) { console.log(evt); writeToScreen('<tr><td>'+new Date()+'</td><td><span style="color: red;">Close </span> ' + evt.reason +'</td></tr>'); }
-
-
-        testWebSocket();
-
-      function plot(data) {
-          console.log(data)
+      function plot() {
+        var rows = d3.selectAll("#output tr")
+          .data(buffer).enter().append("tr");
+          rows.append("td").text("a")
       }
 
     </script>

@@ -72,6 +72,7 @@ func (h *Hub) BroadcastLoop() {
 					log.Println("Buffer JSON Error: ", err)
 					return
 				}
+
 				for s, _ := range h.Connections {
 					err := websocket.Message.Send(s.Ws, string(broadcastJSON))
 					if err != nil {
@@ -96,15 +97,6 @@ func (h *Hub) BroadcastLoop() {
 }
 
 func (s *Socket) ReceiveMessage() {
-	if len(broadcastBuffer) > 0 {
-		broadcastBufferJSON, err := json.Marshal(broadcastBuffer)
-		if err != nil {
-			log.Println("Buffer JSON Error: ", err)
-			return
-		}
-
-		websocket.Message.Send(s.Ws, string(broadcastBufferJSON))
-	}
 
 	for {
 		var x []byte
@@ -118,6 +110,15 @@ func (s *Socket) ReceiveMessage() {
 
 type Socket struct {
 	Ws *websocket.Conn
+}
+
+func BufferServer(w http.ResponseWriter, req *http.Request) {
+	broadcastBufferJSON, err := json.Marshal(broadcastBuffer)
+	if err != nil {
+		log.Println("Buffer JSON Error: ", err)
+		return
+	}
+	fmt.Fprintf(w, string(broadcastBufferJSON))
 }
 
 func IndexServer(w http.ResponseWriter, req *http.Request) {
@@ -167,6 +168,8 @@ func init() {
 	}
 	homePath = usr.HomeDir
 
+	broadcastBuffer = make([]*Broadcast, 0)
+
 	// Set up hub
 	h.Connections = make(map[*Socket]bool)
 	h.Pipe = make(chan string, 1)
@@ -179,6 +182,7 @@ func main() {
 	go readLoop()
 
 	http.Handle("/ws", websocket.Handler(wsServer))
+	http.HandleFunc("/buffer.json", BufferServer)
 	http.HandleFunc("/", IndexServer)
 
 	portString := fmt.Sprintf(":%d", port)
