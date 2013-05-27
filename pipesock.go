@@ -33,25 +33,22 @@ func readLoop() {
 		r := bufio.NewReader(os.Stdin)
 		for {
 			str, err := r.ReadString('\n')
+
 			if err != nil {
 				log.Println("Read Line Error:", err)
 				continue
 			}
-			if passThrough {
-				fmt.Println(str)
-			}
+
 			if len(str) == 0 {
 				continue
 			}
-			//Marshal
-			msg, err := json.Marshal(&Message{time.Now(), str})
-			if err != nil {
-				log.Println("JSON Marshal Error:", err)
-				continue
+
+			if passThrough {
+				fmt.Println(str)
 			}
 
 			//Broadcast
-			h.Pipe <- string(msg)
+			h.Pipe <- str
 		}
 	})()
 }
@@ -66,17 +63,15 @@ func (h *Hub) BroadcastLoop() {
 			newMessage := &Message{time.Now(), str}
 			currentMessages = append(currentMessages, newMessage)
 
-		//Broadcast
+			//Broadcast
 		case <-time.After(time.Duration(delayMillis) * time.Millisecond):
 			if len(currentMessages) > 0 {
-
 				broadcast := &Broadcast{time.Now(), currentMessages}
 				broadcastJSON, err := json.Marshal(broadcast)
 				if err != nil {
 					log.Println("Buffer JSON Error: ", err)
 					return
 				}
-
 				for s, _ := range h.Connections {
 					err := websocket.Message.Send(s.Ws, string(broadcastJSON))
 					if err != nil {
@@ -85,7 +80,6 @@ func (h *Hub) BroadcastLoop() {
 						delete(h.Connections, s)
 					}
 				}
-
 				// Push onto buffer, or grow if not yet at max
 				if len(broadcastBuffer) == bufferSize {
 					for i := 1; i < bufferSize; i++ {
@@ -97,20 +91,21 @@ func (h *Hub) BroadcastLoop() {
 				}
 				currentMessages = currentMessages[:0]
 			}
-
 		}
 	}
 }
 
 func (s *Socket) ReceiveMessage() {
+	if len(broadcastBuffer) > 0 {
+		broadcastBufferJSON, err := json.Marshal(broadcastBuffer)
+		if err != nil {
+			log.Println("Buffer JSON Error: ", err)
+			return
+		}
 
-	broadcastBufferJSON, err := json.Marshal(broadcastBuffer)
-	if err != nil {
-		log.Println("Buffer JSON Error: ", err)
-		return
+		websocket.Message.Send(s.Ws, string(broadcastBufferJSON))
 	}
 
-	websocket.Message.Send(s.Ws, string(broadcastBufferJSON))
 	for {
 		var x []byte
 		err := websocket.Message.Receive(s.Ws, &x)
@@ -172,24 +167,21 @@ func init() {
 	}
 	homePath = usr.HomeDir
 
+	// Set up hub
+	h.Connections = make(map[*Socket]bool)
+	h.Pipe = make(chan string, 1)
 }
 
 func main() {
 	flag.Parse()
 
-	// Set up hub
-	h.Connections = make(map[*Socket]bool)
-	h.Pipe = make(chan string, 1)
 	go h.BroadcastLoop()
-
-	// Start reader
 	go readLoop()
 
 	http.Handle("/ws", websocket.Handler(wsServer))
 	http.HandleFunc("/", IndexServer)
 
 	portString := fmt.Sprintf(":%d", port)
-
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
