@@ -2,26 +2,20 @@ package main
 
 import (
 	"bufio"
-	"time"
 	"code.google.com/p/go.net/websocket"
 	"encoding/json"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/user"
+	"time"
 )
-
-func IndexServer(w http.ResponseWriter, req *http.Request) {
-	log.Println("Path:", req.URL.Path)
-	if req.URL.Path == "/" {
-		http.ServeFile(w, req, "index.html")
-	} else {
-		http.ServeFile(w, req, "."+req.URL.Path)
-	}
-}
 
 type Hub struct {
 	Connections map[*Socket]bool
-	Pipe        chan []byte
+	Pipe        chan string
 }
 
 type Message struct {
@@ -29,38 +23,117 @@ type Message struct {
 	Message string
 }
 
-func (h *Hub) Broadcast() {
-	for {
-		var x string
-		x = string(<-h.Pipe)
-		for s, _ := range h.Connections {
-			err := websocket.Message.Send(s.Ws, x)
+type Broadcast struct {
+	Time     time.Time
+	Messages []*Message
+}
+
+func readLoop() {
+	go (func() {
+		r := bufio.NewReader(os.Stdin)
+		for {
+			str, err := r.ReadString('\n')
 			if err != nil {
-				log.Println(err)
-				s.Ws.Close()
-				delete(h.Connections, s)
+				log.Println("Read Line Error:", err)
+				continue
 			}
+			if passThrough {
+				fmt.Println(str)
+			}
+			if len(str) == 0 {
+				continue
+			}
+			//Marshal
+			msg, err := json.Marshal(&Message{time.Now(), str})
+			if err != nil {
+				log.Println("JSON Marshal Error:", err)
+				continue
+			}
+
+			//Broadcast
+			h.Pipe <- string(msg)
+		}
+	})()
+}
+
+func (h *Hub) BroadcastLoop() {
+	var currentMessages []*Message
+	for {
+		select {
+
+		// Pipe in
+		case str := <-h.Pipe:
+			newMessage := &Message{time.Now(), str}
+			currentMessages = append(currentMessages, newMessage)
+
+		//Broadcast
+		case <-time.After(time.Duration(delayMillis) * time.Millisecond):
+			if len(currentMessages) > 0 {
+
+				broadcast := &Broadcast{time.Now(), currentMessages}
+				broadcastJSON, err := json.Marshal(broadcast)
+				if err != nil {
+					log.Println("Buffer JSON Error: ", err)
+					return
+				}
+
+				for s, _ := range h.Connections {
+					err := websocket.Message.Send(s.Ws, string(broadcastJSON))
+					if err != nil {
+						log.Println(err)
+						s.Ws.Close()
+						delete(h.Connections, s)
+					}
+				}
+
+				// Push onto buffer, or grow if not yet at max
+				if len(broadcastBuffer) == bufferSize {
+					for i := 1; i < bufferSize; i++ {
+						broadcastBuffer[i-1] = broadcastBuffer[i]
+					}
+					broadcastBuffer[bufferSize] = broadcast
+				} else {
+					broadcastBuffer = append(broadcastBuffer, broadcast)
+				}
+				currentMessages = currentMessages[:0]
+			}
+
 		}
 	}
 }
 
 func (s *Socket) ReceiveMessage() {
-	websocket.Message.Send(s.Ws, "Welcome")
+
+	broadcastBufferJSON, err := json.Marshal(broadcastBuffer)
+	if err != nil {
+		log.Println("Buffer JSON Error: ", err)
+		return
+	}
+
+	websocket.Message.Send(s.Ws, string(broadcastBufferJSON))
 	for {
 		var x []byte
 		err := websocket.Message.Receive(s.Ws, &x)
 		if err != nil {
 			break
 		}
-		h.Pipe <- x
 	}
 	s.Ws.Close()
 }
 
-var h Hub
-
 type Socket struct {
 	Ws *websocket.Conn
+}
+
+func IndexServer(w http.ResponseWriter, req *http.Request) {
+	var filePath string
+	if req.URL.Path == "/" {
+		filePath = fmt.Sprintf("%s/.pipesock/%s/index.html", homePath, viewPath)
+	} else {
+		filePath = fmt.Sprintf("%s/.pipesock/%s%s", homePath, viewPath, req.URL.Path)
+	}
+	log.Println(filePath)
+	http.ServeFile(w, req, filePath)
 }
 
 func wsServer(ws *websocket.Conn) {
@@ -69,42 +142,55 @@ func wsServer(ws *websocket.Conn) {
 	s.ReceiveMessage()
 }
 
+var (
+	h                             Hub
+	homePath, viewPath            string
+	port, bufferSize, delayMillis int
+	passThrough                   bool
+	broadcastBuffer               []*Broadcast
+)
+
+func init() {
+	flag.IntVar(&port, "port", 9193, "Port for the pipesock to sit on.")
+	flag.IntVar(&port, "p", 9193, "Port for the pipesock to sit on (shorthand).")
+
+	flag.BoolVar(&passThrough, "through", false, "Pass output to STDOUT.")
+	flag.BoolVar(&passThrough, "t", false, "Pass output to STDOUT (shothand).")
+
+	flag.StringVar(&viewPath, "view", "default", "Directory in ~/.pipesock to use as view.")
+	flag.StringVar(&viewPath, "v", "default", "Directory in ~/.pipesock to use as view. (shorthand).")
+
+	flag.IntVar(&bufferSize, "num", 20, "Number of previous broadcasts to keep in memory.")
+	flag.IntVar(&bufferSize, "n", 20, "Number of previous broadcasts to keep in memory (shorthand).")
+
+	flag.IntVar(&delayMillis, "delay", 2000, "Delay between broadcasts of bundled events in ms.")
+	flag.IntVar(&delayMillis, "d", 2000, "Delay between broadcasts of bundled events in ms (shorthand).")
+
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	homePath = usr.HomeDir
+
+}
+
 func main() {
+	flag.Parse()
 
+	// Set up hub
 	h.Connections = make(map[*Socket]bool)
-	h.Pipe = make(chan []byte, 1)
-	go h.Broadcast()
+	h.Pipe = make(chan string, 1)
+	go h.BroadcastLoop()
 
-	go (func() {
-		// Reader for stdin
-		r := bufio.NewReader(os.Stdin)
-		for {
-			//Read
-			str, err := r.ReadString('\n')
-			if err != nil {
-				log.Println("Read Error:", err)
-				continue
-			}
-			if len(str) == 0 {
-				continue
-			}
-
-			//Marshal
-			msg, err := json.Marshal(&Message{time.Now(), str})
-			if err != nil {
-				log.Println("JSON Error:", err)
-				continue
-			}
-
-			//Broadcast
-			h.Pipe <- (msg)
-		}
-	})()
+	// Start reader
+	go readLoop()
 
 	http.Handle("/ws", websocket.Handler(wsServer))
 	http.HandleFunc("/", IndexServer)
 
-	err := http.ListenAndServe(":12345", nil)
+	portString := fmt.Sprintf(":%d", port)
+
+	err := http.ListenAndServe(portString, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
