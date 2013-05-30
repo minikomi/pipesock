@@ -28,31 +28,6 @@ type Broadcast struct {
 	Messages []*Message
 }
 
-func readLoop() {
-	go (func() {
-		r := bufio.NewReader(os.Stdin)
-		for {
-			str, err := r.ReadString('\n')
-
-			if err != nil {
-				log.Println("Read Line Error:", err)
-				continue
-			}
-
-			if len(str) == 0 {
-				continue
-			}
-
-			if passThrough {
-				fmt.Println(str)
-			}
-
-			//Broadcast
-			h.Pipe <- str
-		}
-	})()
-}
-
 func (h *Hub) BroadcastLoop() {
 	var currentMessages []*Message
 	for {
@@ -96,6 +71,10 @@ func (h *Hub) BroadcastLoop() {
 	}
 }
 
+type Socket struct {
+	Ws *websocket.Conn
+}
+
 func (s *Socket) ReceiveMessage() {
 
 	for {
@@ -108,17 +87,22 @@ func (s *Socket) ReceiveMessage() {
 	s.Ws.Close()
 }
 
-type Socket struct {
-	Ws *websocket.Conn
-}
-
-func BufferServer(w http.ResponseWriter, req *http.Request) {
-	broadcastBufferJSON, err := json.Marshal(broadcastBuffer)
-	if err != nil {
-		log.Println("Buffer JSON Error: ", err)
-		return
+func readLoop() {
+	r := bufio.NewReader(os.Stdin)
+	for {
+		str, err := r.ReadString('\n')
+		if err != nil {
+			log.Println("Read Line Error:", err)
+			continue
+		}
+		if len(str) == 0 {
+			continue
+		}
+		if passThrough {
+			fmt.Println(str)
+		}
+		h.Pipe <- str
 	}
-	fmt.Fprintf(w, string(broadcastBufferJSON))
 }
 
 func IndexServer(w http.ResponseWriter, req *http.Request) {
@@ -128,8 +112,19 @@ func IndexServer(w http.ResponseWriter, req *http.Request) {
 	} else {
 		filePath = fmt.Sprintf("%s/.pipesock/%s%s", homePath, viewPath, req.URL.Path)
 	}
-	log.Println(filePath)
+	if logging {
+		log.Println(filePath)
+	}
 	http.ServeFile(w, req, filePath)
+}
+
+func BufferServer(w http.ResponseWriter, req *http.Request) {
+	broadcastBufferJSON, err := json.Marshal(broadcastBuffer)
+	if err != nil {
+		log.Println("Buffer JSON Error: ", err)
+		return
+	}
+	fmt.Fprintf(w, string(broadcastBufferJSON))
 }
 
 func wsServer(ws *websocket.Conn) {
@@ -142,7 +137,7 @@ var (
 	h                             Hub
 	homePath, viewPath            string
 	port, bufferSize, delayMillis int
-	passThrough                   bool
+	passThrough, logging          bool
 	broadcastBuffer               []*Broadcast
 )
 
@@ -152,6 +147,9 @@ func init() {
 
 	flag.BoolVar(&passThrough, "through", false, "Pass output to STDOUT.")
 	flag.BoolVar(&passThrough, "t", false, "Pass output to STDOUT (shothand).")
+
+	flag.BoolVar(&logging, "through", true, "Log HTTP requetsts to STDOUT")
+	flag.BoolVar(&logging, "t", true, "Log HTTP requests tp STDOUT (shorthand).")
 
 	flag.StringVar(&viewPath, "view", "default", "Directory in ~/.pipesock to use as view.")
 	flag.StringVar(&viewPath, "v", "default", "Directory in ~/.pipesock to use as view. (shorthand).")
