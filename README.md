@@ -4,7 +4,7 @@ A websocket server you can pipe to.
 
 To get started move the default directory into ~/.pipesock 
 
-    tail -f "somelog" | go run pipesock.go 
+    tail -f "some.log" | go run pipesock.go 
     
 The server will be there on port :9193
 
