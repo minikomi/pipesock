@@ -2,6 +2,8 @@
 
 A websocket server you can pipe to.
 
+WIP: not there yet.. :blush:
+
 ![pipesockn'](http://www.westernsafety.com/ultratech2008/UltratechStormpg18-PipeSock.jpg)
 
 Todo: 
