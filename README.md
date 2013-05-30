@@ -2,7 +2,13 @@
 
 A websocket server you can pipe to.
 
-WIP: not there yet.. :blush:
+To get started move the default directory into ~/.pipesock 
+
+    tail -f "somelog" | go run pipesock.go 
+    
+The server will be there on port :9193
+
+
 
 ![pipesockn'](http://www.westernsafety.com/ultratech2008/UltratechStormpg18-PipeSock.jpg)
 
