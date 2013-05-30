@@ -100,7 +100,7 @@ func readLoop() {
 			continue
 		}
 		if passThrough {
-			fmt.Println(str)
+			fmt.Print(str)
 		}
 		h.Pipe <- str
 	}
