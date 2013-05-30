@@ -43,6 +43,7 @@ func (h *Hub) BroadcastLoop() {
 			if len(currentMessages) > 0 {
 				broadcast := &Broadcast{time.Now(), currentMessages}
 				broadcastJSON, err := json.Marshal(broadcast)
+
 				if err != nil {
 					log.Println("Buffer JSON Error: ", err)
 					return
@@ -51,7 +52,7 @@ func (h *Hub) BroadcastLoop() {
 				for s, _ := range h.Connections {
 					err := websocket.Message.Send(s.Ws, string(broadcastJSON))
 					if err != nil {
-						log.Println(err)
+						log.Println("WS error:", err)
 						s.Ws.Close()
 						delete(h.Connections, s)
 					}
@@ -105,7 +106,7 @@ func readLoop() {
 	}
 }
 
-func IndexServer(w http.ResponseWriter, req *http.Request) {
+func IndexHandler(w http.ResponseWriter, req *http.Request) {
 	var filePath string
 	if req.URL.Path == "/" {
 		filePath = fmt.Sprintf("%s/.pipesock/%s/index.html", homePath, viewPath)
@@ -118,13 +119,18 @@ func IndexServer(w http.ResponseWriter, req *http.Request) {
 	http.ServeFile(w, req, filePath)
 }
 
-func BufferServer(w http.ResponseWriter, req *http.Request) {
+func BufferHandler(w http.ResponseWriter, req *http.Request) {
 	broadcastBufferJSON, err := json.Marshal(broadcastBuffer)
 	if err != nil {
 		log.Println("Buffer JSON Error: ", err)
 		return
 	}
 	fmt.Fprintf(w, string(broadcastBufferJSON))
+}
+
+func FlushHandler(w http.ResponseWriter, req *http.Request) {
+	broadcastBuffer = broadcastBuffer[:0]
+	fmt.Fprintf(w, "Flushed")
 }
 
 func wsServer(ws *websocket.Conn) {
@@ -148,8 +154,8 @@ func init() {
 	flag.BoolVar(&passThrough, "through", false, "Pass output to STDOUT.")
 	flag.BoolVar(&passThrough, "t", false, "Pass output to STDOUT (shothand).")
 
-	flag.BoolVar(&logging, "through", true, "Log HTTP requetsts to STDOUT")
-	flag.BoolVar(&logging, "t", true, "Log HTTP requests tp STDOUT (shorthand).")
+	flag.BoolVar(&logging, "log", false, "Log HTTP requetsts to STDOUT")
+	flag.BoolVar(&logging, "l", false, "Log HTTP requests tp STDOUT (shorthand).")
 
 	flag.StringVar(&viewPath, "view", "default", "Directory in ~/.pipesock to use as view.")
 	flag.StringVar(&viewPath, "v", "default", "Directory in ~/.pipesock to use as view. (shorthand).")
@@ -179,9 +185,10 @@ func main() {
 	go h.BroadcastLoop()
 	go readLoop()
 
+	http.HandleFunc("/", IndexHandler)
+	http.HandleFunc("/buffer.json", BufferHandler)
+	http.HandleFunc("/flush", FlushHandler)
 	http.Handle("/ws", websocket.Handler(wsServer))
-	http.HandleFunc("/buffer.json", BufferServer)
-	http.HandleFunc("/", IndexServer)
 
 	portString := fmt.Sprintf(":%d", port)
 	err := http.ListenAndServe(portString, nil)
