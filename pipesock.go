@@ -160,8 +160,8 @@ func init() {
 	flag.BoolVar(&logging, "log", false, "Log HTTP requetsts to STDOUT")
 	flag.BoolVar(&logging, "l", false, "Log HTTP requests tp STDOUT (shorthand).")
 
-	flag.StringVar(&viewPath, "view", "default", "Directory in ~/.pipesock to use as view.")
-	flag.StringVar(&viewPath, "v", "default", "Directory in ~/.pipesock to use as view. (shorthand).")
+	flag.StringVar(&viewPath, "view", "default", "View directory to serve.")
+	flag.StringVar(&viewPath, "v", "default", "View directory to serve (shorthand).")
 
 	flag.IntVar(&bufferSize, "num", 20, "Number of previous broadcasts to keep in memory.")
 	flag.IntVar(&bufferSize, "n", 20, "Number of previous broadcasts to keep in memory (shorthand).")
