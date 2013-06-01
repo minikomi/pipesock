@@ -53,10 +53,10 @@
     </table>
     <script language="javascript" type="text/javascript">
 
-      var wsUri = "ws://"+document.location.host+"/ws", buffer;
-      var fmtTime = d3.time.format("<strong>%Y-%m-%d</strong>(%H:%M:%S)");
-
+      var wsUri = "ws://"+document.location.host+"/ws", buffer,
+      fmtTime = d3.time.format("<strong>%Y-%m-%d</strong>(%H:%M:%S)"),
       websocket = new WebSocket(wsUri);
+      
       d3.json("/buffer.json", function(data){
           buffer = data;
           plot()
@@ -64,7 +64,6 @@
           buffer = buffer.concat(JSON.parse(msg.data));
           plot();
           };
-
       });
 
       function plot() {
