@@ -184,7 +184,6 @@ func main() {
 		panic(err)
 	}
 	viewPath = filepath.Join(pkgInfo.Dir, "views", viewPath)
-	fmt.Println(viewPath)
 
 	go h.BroadcastLoop()
 	go readLoop()
