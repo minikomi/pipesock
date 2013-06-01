@@ -2,9 +2,7 @@
 
 A websocket server you can pipe to.
 
-To get going, create `~/.pipesock` on your home directoy, and then move the default folder inside.
-
-Other views can also live there
+Other views can be added to $GOPATH/src/github.com/minikomi/pipesock/views/
 
     tail -f "some.log" | go run pipesock.go 
     
