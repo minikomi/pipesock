@@ -8,7 +8,7 @@ To get started move the default directory into ~/.pipesock
     
 The server will be there on port `:9193`.
 
-The websocket can connect to `/ws` and receive packets of messages in the format:
+The websocket can connect to `/ws` and receive serialized messages in the format:
 
     {
       Time: Timestamp for broadcast,
