@@ -169,13 +169,6 @@ func init() {
 	flag.IntVar(&delayMillis, "delay", 2000, "Delay between broadcasts of bundled events in ms.")
 	flag.IntVar(&delayMillis, "d", 2000, "Delay between broadcasts of bundled events in ms (shorthand).")
 
-	pkgInfo, err := build.Import("github.com/minikomi/pipesock", "", 0)
-	if err != nil {
-		panic(err)
-	}
-
-	viewPath = filepath.Join(pkgInfo.Dir, viewPath)
-
 	broadcastBuffer = make([]*Broadcast, 0)
 
 	// Set up hub
@@ -186,6 +179,13 @@ func init() {
 func main() {
 	flag.Parse()
 
+	pkgInfo, err := build.Import("github.com/minikomi/pipesock", "", 0)
+	if err != nil {
+		panic(err)
+	}
+	viewPath = filepath.Join(pkgInfo.Dir, "views", viewPath)
+	fmt.Println(viewPath)
+
 	go h.BroadcastLoop()
 	go readLoop()
 
@@ -195,7 +195,7 @@ func main() {
 	http.Handle("/ws", websocket.Handler(wsServer))
 
 	portString := fmt.Sprintf(":%d", port)
-	err := http.ListenAndServe(portString, nil)
+	err = http.ListenAndServe(portString, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
