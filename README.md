@@ -8,6 +8,8 @@ To get started move the default directory into ~/.pipesock
     
 The server will be there on port `:9193`.
 
+Accessing `/flush` will clear the buffer.
+
 The websocket can connect to `/ws` and receive serialized messages in the format:
 
     {
