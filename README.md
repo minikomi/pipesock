@@ -27,8 +27,6 @@ The websocket can connect to `/ws` and receive serialized messages in the format
 
 The array of buffered messages can be read in JSON format at `/buffer.json`.
 
-
-
 ![pipesockn'](http://www.westernsafety.com/ultratech2008/UltratechStormpg18-PipeSock.jpg)
 
 ## flags:
@@ -41,11 +39,10 @@ The array of buffered messages can be read in JSON format at `/buffer.json`.
     -num=20: Number of previous broadcasts to keep in memory.
     -p=9193: Port for the pipesock to sit on (shorthand).
     -port=9193: Port for the pipesock to sit on.
-    -t=false: Pass input to STDOUT (shothand).
-    -through=false: Pass input to STDOUT.
-    -v="default": Directory in ~/.pipesock to use as view.  (shorthand).
-    -view="default": Directory in ~/.pipesock to use as view.
-
+    -t=false: Pass output to STDOUT (shorthand).
+    -through=false: Pass output to STDOUT.
+    -v="default": View directory to serve (shorthand).
+    -view="default": View directory to serve.
 
 ## Todo: 
 
