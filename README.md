@@ -2,7 +2,9 @@
 
 A websocket server you can pipe to.
 
-To get started move the default directory into ~/.pipesock 
+To get create ~/.pipesock on your home directoy, and then move the default folder inside.
+
+Other views can also live there
 
     tail -f "some.log" | go run pipesock.go 
     
