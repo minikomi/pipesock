@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"go/build"
 	"log"
 	"net/http"
 	"os"
-	"os/user"
+	"path/filepath"
 	"time"
 )
 
@@ -107,11 +108,13 @@ func readLoop() {
 }
 
 func IndexHandler(w http.ResponseWriter, req *http.Request) {
+
 	var filePath string
+
 	if req.URL.Path == "/" {
-		filePath = fmt.Sprintf("%s/.pipesock/%s/index.html", homePath, viewPath)
+		filePath = fmt.Sprintf("%s/index.html", viewPath)
 	} else {
-		filePath = fmt.Sprintf("%s/.pipesock/%s%s", homePath, viewPath, req.URL.Path)
+		filePath = fmt.Sprintf("%s/%s", viewPath, req.URL.Path)
 	}
 	if logging {
 		log.Println(filePath)
@@ -141,7 +144,7 @@ func wsServer(ws *websocket.Conn) {
 
 var (
 	h                             Hub
-	homePath, viewPath            string
+	viewPath                      string
 	port, bufferSize, delayMillis int
 	passThrough, logging          bool
 	broadcastBuffer               []*Broadcast
@@ -166,11 +169,12 @@ func init() {
 	flag.IntVar(&delayMillis, "delay", 2000, "Delay between broadcasts of bundled events in ms.")
 	flag.IntVar(&delayMillis, "d", 2000, "Delay between broadcasts of bundled events in ms (shorthand).")
 
-	usr, err := user.Current()
+	pkgInfo, err := build.Import("github.com/minikomi/pipesock", "", 0)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	homePath = usr.HomeDir
+
+	viewPath = filepath.Join(pkgInfo.Dir, viewPath)
 
 	broadcastBuffer = make([]*Broadcast, 0)
 
