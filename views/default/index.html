@@ -70,7 +70,7 @@
         var rows = d3.select("#output tbody").selectAll("tr.messages")
           .data(buffer).enter().append("tr").classed("messages", true)
 
-        rows.append("td").html(function(d){return fmtTime(new Date(d.Time))});
+        rows.append("td").html(function(d){return fmtTime(new Date(d.Timestamp * 1000))});
 
         var innerTable = rows.append("td").append("table")
         var innerHeader = innerTable.append("tr")
@@ -82,7 +82,7 @@
           .data(function(d){return d.Messages})
           .enter().append("tr").classed("message", true)
 
-          innerRows.append("td").html(function(d){return fmtTime(new Date(d.Time)) }).classed("timestamp", true)
+          innerRows.append("td").html(function(d){return fmtTime(new Date(d.Timestamp * 1000)) }).classed("timestamp", true)
           innerRows.append("td").html(function(d){return d.Message })
       }
 

@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -20,29 +21,31 @@ type Hub struct {
 }
 
 type Message struct {
-	Time    time.Time
-	Message string
+	Timestamp int64
+	Message   string
 }
 
 type Broadcast struct {
-	Time     time.Time
-	Messages []*Message
+	Timestamp int64
+	Messages  []*Message
 }
 
 func (h *Hub) BroadcastLoop() {
 	var currentMessages []*Message
+	ticker := time.NewTicker(time.Duration(delayMillis) * time.Millisecond)
 	for {
 		select {
 
-		// Pipe in
 		case str := <-h.Pipe:
-			newMessage := &Message{time.Now(), str}
+			ts := time.Now().Unix()
+			newMessage := &Message{ts, str}
 			currentMessages = append(currentMessages, newMessage)
 
-			//Broadcast
-		case <-time.After(time.Duration(delayMillis) * time.Millisecond):
+		case <-ticker.C:
 			if len(currentMessages) > 0 {
-				broadcast := &Broadcast{time.Now(), currentMessages}
+
+				ts := time.Now().Unix()
+				broadcast := &Broadcast{ts, currentMessages}
 				broadcastJSON, err := json.Marshal(broadcast)
 
 				if err != nil {
@@ -53,7 +56,9 @@ func (h *Hub) BroadcastLoop() {
 				for s, _ := range h.Connections {
 					err := websocket.Message.Send(s.Ws, string(broadcastJSON))
 					if err != nil {
-						log.Println("WS error:", err)
+						if err.Error() != ("use of closed network connection") {
+							log.Println("WS error:", err)
+						}
 						s.Ws.Close()
 						delete(h.Connections, s)
 					}
@@ -67,6 +72,7 @@ func (h *Hub) BroadcastLoop() {
 				} else {
 					broadcastBuffer = append(broadcastBuffer, broadcast)
 				}
+
 				currentMessages = currentMessages[:0]
 			}
 		}
@@ -93,6 +99,10 @@ func readLoop() {
 	r := bufio.NewReader(os.Stdin)
 	for {
 		str, err := r.ReadString('\n')
+
+		if err == io.EOF {
+			log.Fatal("EOF. Server closed.")
+		}
 		if err != nil {
 			log.Println("Read Line Error:", err)
 			continue
@@ -100,9 +110,11 @@ func readLoop() {
 		if len(str) == 0 {
 			continue
 		}
+
 		if passThrough {
 			fmt.Print(str)
 		}
+
 		h.Pipe <- str
 	}
 }
