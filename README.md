@@ -6,7 +6,22 @@ To get started move the default directory into ~/.pipesock
 
     tail -f "some.log" | go run pipesock.go 
     
-The server will be there on port :9193
+The server will be there on port `:9193`.
+
+The websocket can connect to `/ws` and receive packets of messages in the format:
+
+    {
+      Time: Timestamp for broadcast,
+      Messages: [
+        {
+         Time: Timestamp for readline,
+         Message: Message string
+         }
+         ....
+      ]
+    }
+
+The array of buffered messages can be read in JSON format at `/buffer.json`.
 
 
 
