@@ -2,7 +2,7 @@
 
 A websocket server you can pipe to.
 
-To get create ~/.pipesock on your home directoy, and then move the default folder inside.
+To get going, create `~/.pipesock` on your home directoy, and then move the default folder inside.
 
 Other views can also live there
 
