@@ -152,7 +152,7 @@ func init() {
 	flag.IntVar(&port, "p", 9193, "Port for the pipesock to sit on (shorthand).")
 
 	flag.BoolVar(&passThrough, "through", false, "Pass output to STDOUT.")
-	flag.BoolVar(&passThrough, "t", false, "Pass output to STDOUT (shothand).")
+	flag.BoolVar(&passThrough, "t", false, "Pass output to STDOUT (shorthand).")
 
 	flag.BoolVar(&logging, "log", false, "Log HTTP requetsts to STDOUT")
 	flag.BoolVar(&logging, "l", false, "Log HTTP requests tp STDOUT (shorthand).")
