@@ -2,11 +2,11 @@
 
 A websocket server you can pipe to.
 
-Other views can be added to $GOPATH/src/github.com/minikomi/pipesock/views/
+    tail -f "some.log" | awk 'print{$2 "," $3}' | pipesock 
 
-    tail -f "some.log" | go run pipesock.go 
-    
 The server will be there on port `:9193`.
+
+Other views can be added to $GOPATH/src/github.com/minikomi/pipesock/views/
 
 Accessing `/flush` will clear the buffer.
 
