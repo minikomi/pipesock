@@ -64,17 +64,14 @@ func (h *Hub) BroadcastLoop() {
 						delete(h.Connections, s)
 					}
 				}
-				// Push onto buffer, or grow if not yet at max
+
+				// Shuffle and push onto buffer, or grow if not yet at max
 				if len(broadcastBuffer) == bufferSize {
-					for i := 1; i < bufferSize-1; i++ {
-						broadcastBuffer[i-1] = broadcastBuffer[i]
-					}
-					broadcastBuffer[bufferSize-1] = broadcast
-				} else {
-					broadcastBuffer = append(broadcastBuffer, broadcast)
+					broadcastBuffer = broadcastBuffer[1:]
 				}
-				currentMessages = currentMessages[:0]
+				broadcastBuffer = append(broadcastBuffer, broadcast)
 			}
+			currentMessages = make([]*Message, 0)
 		}
 	}
 }
@@ -120,7 +117,6 @@ func readLoop() {
 }
 
 func IndexHandler(w http.ResponseWriter, req *http.Request) {
-
 	var filePath string
 
 	if req.URL.Path == "/" {
