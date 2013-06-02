@@ -1,16 +1,29 @@
 # Pipesock
 
-A websocket server you can pipe to.
+## A websocket server you can pipe to.
+
+![pipesockn'](http://www.westernsafety.com/ultratech2008/UltratechStormpg18-PipeSock.jpg)
+
+Just a heads up: I'm still tweaking this a lot. If you have suggestions, problems please don't hesitate to open an issue.
+
+### To Install:
+
+    go get code.google.com/p/go.net/websocket
+    go get github.com/minikomi/pipesock
+    cd $GOPATH/src/github.com/minikomi/pipesock
+    go install
+    
+Then, provided you have `$GOPATH/bin` in your `PATH` you can start using the server with the pipesock command:
 
     tail -f "some.log" | awk 'print{$2 "," $3}' | pipesock 
 
-The server will be there on port `:9193`.
+By default, you can then point your browser at `localhost:9193`.
 
-Other views can be added to $GOPATH/src/github.com/minikomi/pipesock/views/
+### Notes:
 
-Accessing `/flush` will clear the buffer.
-
-The websocket can connect to `/ws` and receive serialized messages in the format:
+* Other views can be added to `$GOPATH/src/github.com/minikomi/pipesock/views/`
+* Accessing `/flush` will clear the buffer.
+* The websocket can connect to `/ws` and receive serialized messages in the format:
 
     {
       Time: Timestamp for broadcast,
@@ -23,9 +36,7 @@ The websocket can connect to `/ws` and receive serialized messages in the format
       ]
     }
 
-The array of buffered messages can be read in JSON format at `/buffer.json`.
-
-![pipesockn'](http://www.westernsafety.com/ultratech2008/UltratechStormpg18-PipeSock.jpg)
+* The array of buffered messages can be read in JSON format at `/buffer.json`.
 
 ## flags:
 
