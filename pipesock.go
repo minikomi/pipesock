@@ -37,14 +37,15 @@ func (h *Hub) BroadcastLoop() {
 		select {
 
 		case str := <-h.Pipe:
-			ts := time.Now().Unix()
+			t := time.Now()
+			ts := t.UnixNano() / 1e6
 			newMessage := &Message{ts, str}
 			currentMessages = append(currentMessages, newMessage)
 
 		case <-ticker.C:
 			if len(currentMessages) > 0 {
-
-				ts := time.Now().Unix()
+				t := time.Now()
+				ts := t.UnixNano() / 1e6
 				broadcast := &Broadcast{ts, currentMessages}
 				broadcastJSON, err := json.Marshal(broadcast)
 
@@ -72,7 +73,6 @@ func (h *Hub) BroadcastLoop() {
 				} else {
 					broadcastBuffer = append(broadcastBuffer, broadcast)
 				}
-
 				currentMessages = currentMessages[:0]
 			}
 		}
