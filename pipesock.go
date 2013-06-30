@@ -30,9 +30,14 @@ type Broadcast struct {
 	Messages  []*Message
 }
 
+type BroadcastBuffer struct {
+	Data     []*Broadcast
+	Interval int
+}
+
 func (h *Hub) BroadcastLoop() {
 	var currentMessages []*Message
-	ticker := time.NewTicker(time.Duration(delayMillis) * time.Millisecond)
+	ticker := time.NewTicker(time.Duration(intervalMillis) * time.Millisecond)
 	for {
 		select {
 
@@ -66,10 +71,10 @@ func (h *Hub) BroadcastLoop() {
 				}
 
 				// Shuffle and push onto buffer, or grow if not yet at max
-				if len(broadcastBuffer) == bufferSize {
-					broadcastBuffer = broadcastBuffer[1:]
+				if len(Buffer.Data) == bufferSize {
+					Buffer.Data = Buffer.Data[1:]
 				}
-				broadcastBuffer = append(broadcastBuffer, broadcast)
+				Buffer.Data = append(Buffer.Data, broadcast)
 			}
 			currentMessages = make([]*Message, 0)
 		}
@@ -131,16 +136,16 @@ func IndexHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func BufferHandler(w http.ResponseWriter, req *http.Request) {
-	broadcastBufferJSON, err := json.Marshal(broadcastBuffer)
+	BufferJSON, err := json.Marshal(Buffer)
 	if err != nil {
 		log.Println("Buffer JSON Error: ", err)
 		return
 	}
-	fmt.Fprintf(w, string(broadcastBufferJSON))
+	fmt.Fprintf(w, string(BufferJSON))
 }
 
 func FlushHandler(w http.ResponseWriter, req *http.Request) {
-	broadcastBuffer = broadcastBuffer[:0]
+	Buffer.Data = Buffer.Data[:0]
 	fmt.Fprintf(w, "Flushed")
 }
 
@@ -151,33 +156,33 @@ func wsServer(ws *websocket.Conn) {
 }
 
 var (
-	h                             Hub
-	viewPath                      string
-	port, bufferSize, delayMillis int
-	passThrough, logging          bool
-	broadcastBuffer               []*Broadcast
+	h                                Hub
+	viewPath                         string
+	port, bufferSize, intervalMillis int
+	passThrough, logging             bool
+	Buffer                           BroadcastBuffer
 )
 
 func init() {
-	flag.IntVar(&port, "port", 9193, "Port for the pipesock to sit on.")
-	flag.IntVar(&port, "p", 9193, "Port for the pipesock to sit on (shorthand).")
+	flag.IntVar(&port, "port", 9193, "Port for the pipesock to sit on")
+	flag.IntVar(&port, "p", 9193, "Port for the pipesock to sit on (shorthand)")
 
-	flag.BoolVar(&passThrough, "through", false, "Pass output to STDOUT.")
-	flag.BoolVar(&passThrough, "t", false, "Pass output to STDOUT (shorthand).")
+	flag.BoolVar(&passThrough, "through", false, "Pass output to STDOUT")
+	flag.BoolVar(&passThrough, "t", false, "Pass output to STDOUT (shorthand)")
 
 	flag.BoolVar(&logging, "log", false, "Log HTTP requetsts to STDOUT")
-	flag.BoolVar(&logging, "l", false, "Log HTTP requests tp STDOUT (shorthand).")
+	flag.BoolVar(&logging, "l", false, "Log HTTP requests tp STDOUT (shorthand)")
 
-	flag.StringVar(&viewPath, "view", "default", "View directory to serve.")
-	flag.StringVar(&viewPath, "v", "default", "View directory to serve (shorthand).")
+	flag.StringVar(&viewPath, "view", "default", "View directory to serve")
+	flag.StringVar(&viewPath, "v", "default", "View directory to serve (shorthand)")
 
-	flag.IntVar(&bufferSize, "num", 20, "Number of previous broadcasts to keep in memory.")
-	flag.IntVar(&bufferSize, "n", 20, "Number of previous broadcasts to keep in memory (shorthand).")
+	flag.IntVar(&bufferSize, "num", 20, "Number of previous broadcasts to keep in memory")
+	flag.IntVar(&bufferSize, "n", 20, "Number of previous broadcasts to keep in memory (shorthand)")
 
-	flag.IntVar(&delayMillis, "delay", 2000, "Delay between broadcasts of bundled events in ms.")
-	flag.IntVar(&delayMillis, "d", 2000, "Delay between broadcasts of bundled events in ms (shorthand).")
-
-	broadcastBuffer = make([]*Broadcast, 0)
+	flag.IntVar(&intervalMillis, "interval", 2000, "Interval of broadcasts in ms")
+	flag.IntVar(&intervalMillis, "i", 2000, "Interval of broadcasts in ms (shorthand)")
+	Buffer.Interval = intervalMillis
+	Buffer.Data = make([]*Broadcast, 0)
 
 	// Set up hub
 	h.Connections = make(map[*Socket]bool)

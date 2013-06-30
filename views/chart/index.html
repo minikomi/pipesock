@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pipesock</title>
+    <script src="d3.v3.min.js" type="text/javascript"></script>
+    <style>
+      .x.axis line {
+        shape-rendering: auto;
+      }
+
+      svg {
+        font: 10px sans-serif;
+      }
+      .axis path, .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+
+      .line {
+        fill: none;
+        stroke: #000;
+        stroke-width: 1.5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>pipesock</h1>
+
+    <script language="javascript" type="text/javascript">
+
+      var wsUri = "ws://"+document.location.host+"/ws", buffer,
+        websocket = new WebSocket(wsUri);
+      var allKeys = [];
+      var w = 960,
+          h = 500
+          margin = {t:30,l:30,r:30,b:30},
+          color = d3.scale.category20(),
+          x = d3.time.scale()
+            .rangeRound([0, w]),
+          y = d3.scale.linear()
+            .rangeRound([h,0]);
+      var interval;
+
+      var messageCount = function(msgs) {
+        var counted = msgs.reduce(function(o,i){
+          o[i.Message] ?  o[i.Message] = o[i.Message] + 1 : o[i.Message] = 1;
+          return o
+        },{})
+
+        d3.keys(counted).forEach(function(k){
+          if (allKeys.indexOf(k) < 0) {
+            allKeys.push(k);
+          }
+        });
+
+        return counted;
+      };
+
+      var msgParse = function(msgs) {
+        msgs.Timestamp = new Date(msgs.Timestamp);
+        var counted = messageCount(msgs.Messages.sort(function(a,b){return (+a.Message) - (+b.Message)}))
+        var offset = 0;
+        msgs.Messages = d3.keys(counted).map(function(k){
+          var o = {
+            key: k,
+            value: counted[k],
+            offset: offset
+          };
+          offset = offset + counted[k];
+          return o;
+        });
+      }
+
+      d3.json("/buffer.json", function(data){
+
+        buffer = data.Data;
+        interval = data.Interval;
+        buffer.forEach(msgParse)
+
+        plot();
+
+        websocket.onmessage = function(msg){
+          data = JSON.parse(msg.data);
+          msgParse(data);
+          buffer = buffer.concat(data);
+          plot();
+          if (buffer.length > 20) {
+            buffer.shift();
+          }
+        };
+      });
+
+      var svg = d3.select("body").append("svg:svg")
+        .attr("width", w + margin.l + margin.r)
+        .attr("height", h + margin.t + margin.b)
+          .append("svg:g")
+            .attr("transform", "translate(" + margin.l + "," + margin.t + ")");
+
+      svg.append("defs").append("clipPath")
+        .attr("id", "clipMain")
+          .append("rect")
+            .attr("width", w)
+            .attr("height", h);
+
+      svg.append("defs").append("clipPath")
+        .attr("id", "clipWhole")
+          .append("rect")
+            .attr("transform", "translate("+(-margin.l)+",-4)")
+            .attr("width", w + margin.l + margin.r)
+            .attr("height", h+4);
+
+      var xAxis = d3.svg.axis()
+        .tickFormat(d3.time.format("%H:%M:%S"))
+      var yAxis = d3.svg.axis()
+        .orient("left")      
+      var xAxisG = svg.append("g").attr("class","x axis").attr("transform", "translate(0,"+h+")")
+        .attr("clip-path", "url(#clipMain)")
+      var yAxisG = svg.append("g").attr("class","y axis")
+        .attr("clip-path", "url(#clipWhole)")
+
+      function plot() {
+        x.domain(d3.extent(buffer, function(d){return d.Timestamp}));
+        y.domain([
+          0, d3.max(buffer, function(d){
+            return d3.sum(d.Messages, function(m) {
+              return m.value
+            })
+          })
+        ])
+
+        xAxis.scale(x).ticks(buffer.length/2)
+        yAxis.scale(y)
+
+        yAxisG.transition().duration(interval).ease("linear").call(yAxis)
+        xAxisG.transition().duration(interval).ease("linear").call(xAxis)
+
+        var rectGroups = svg.selectAll(".rectGroup").data(buffer, function(d){return d.Timestamp});
+
+        rectGroups.enter()
+          .append("g").attr("class", "rectGroup")
+            .attr("transform", function(d,i){
+              return "translate(" + x(d.Timestamp.valueOf() + interval) + ",0)"
+            })
+            .transition()
+              .duration(interval).ease("linear")
+              .attr("transform", function(d,i){
+                return "translate(" + x(d.Timestamp.valueOf()) + ",0)"
+              });
+
+        rectGroups.attr("transform", function(d,i){
+          return "translate(" + x(d.Timestamp.valueOf() + interval) + ",0)"
+        }).transition()
+          .duration(interval).ease("linear")
+            .attr("transform", function(d,i){
+              return "translate(" + x(d.Timestamp.valueOf()) + ",0)"
+            });
+
+        rectGroups.exit().transition()
+          .duration(interval).ease("linear")
+            .attr("transform", function(d,i){
+              return "translate(" + x(d.Timestamp.valueOf()) + ",0)"
+            });
+
+        var rects = rectGroups.selectAll("rect").data(function(d){return d.Messages})
+
+        rects.enter().append("rect")
+
+        rects.attr("width", function(d){return 10})
+          .attr("height", function(d){return y(d.value)})
+          .attr("fill", function(d){return color(+d.key)})
+          .attr("y", function(d){return y(d.offset) - y(d.value)})
+      }
+
+    </script>
+  </body>
+</html>
