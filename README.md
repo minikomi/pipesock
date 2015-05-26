@@ -2,7 +2,7 @@
 
 ## A websocket server you can pipe to.
 
-![pipesockn'](http://www.westernsafety.com/ultratech2008/UltratechStormpg18-PipeSock.jpg)
+![pipesockn'](http://www.spillcontainment.com/sites/default/files/pipe-light1.jpg)
 
 Just a heads up: I'm still tweaking this a lot. If you have suggestions, problems please don't hesitate to open an issue.
 
