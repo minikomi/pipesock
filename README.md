@@ -2,7 +2,7 @@
 
 ## A websocket server you can pipe to.
 
-![pipesockn'](http://www.spillcontainment.com/sites/default/files/pipe-light1.jpg)
+![pipesockn'](https://cloud.githubusercontent.com/assets/364725/19879661/7415a448-a038-11e6-8a8e-f87582c22ced.jpg)
 
 Just a heads up: I'm still tweaking this a lot. If you have suggestions, problems please don't hesitate to open an issue.
 
